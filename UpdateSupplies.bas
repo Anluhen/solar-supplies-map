@@ -137,25 +137,15 @@ temp = Timer
 Debug.Print "UpdateMapa Start"
 
     Dim exportWb As Workbook
-    'Dim wbIter As Workbook ' Iterator for workbooks
     Dim Workbook As Workbook
-    'Dim wsMapa As Worksheet
     Dim exportWs As Worksheet
     Dim Row As Long
     Dim exportWbName As String
     Dim exportWbPath As String
-    'Dim StartDate As String
-    'Dim EndDate As String
-    'Dim ordem As String
-    'Dim attempt As Long
     Dim found As Boolean
     Dim wbCount As Long
     Dim wsMapaLR As Long
     Dim exportWsLR As Long
-    'Dim currentRows As Long
-    'Dim requiredRows As Long
-    'Dim foundCell As Range
-    'Dim Gerador As String
     
     ' Name of the workbook to find
     exportWbName = "CS11-" & Gerador
