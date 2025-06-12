@@ -63,17 +63,17 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
                     
                     CurrentCol = 9
                     
-                    Do While Not IsEmpty(Cells(1, CurrentCol))
+                    Do While Not IsEmpty(ws.Cells(1, CurrentCol))
                         ErrorSection = "While-" & CurrentCol
-                        Gerador = Cells(1, CurrentCol)
-                        PEP = Cells(1, CurrentCol + 1)
+                        Gerador = ws.Cells(1, CurrentCol)
+                        PEP = ws.Cells(1, CurrentCol + 1)
                         
                         ReDim Preserve PEPList(UBound(PEPList) + 1) ' Resize array dynamically
                         PEPList(UBound(PEPList)) = PEP
                         
                         Application.StatusBar = "Trabalhando em " & PEP
         
-                        If Not UpdateMapa(Gerador, CurrentCol) Or Not UpdateCJI3(PEP, CurrentCol) Then
+                        If Not UpdateMapa(ws, Gerador, CurrentCol) Or Not UpdateCJI3(wb, PEP, CurrentCol) Then
                             MsgBox "Não foi possível atualizar Mapa de Suprimentos de " & vbCrLf & PEP, vbInformation
                         End If
                         
@@ -94,7 +94,7 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
         
         Application.StatusBar = False
 
-        ws.Activate
+        'ws.Activate
         
 NextWorkbook:
     Next wb
@@ -128,7 +128,7 @@ ErrorHandler:
     Resume CleanExit
 End Sub
 
-Function UpdateMapa(Gerador As String, CurrentCol As Long) As Boolean
+Function UpdateMapa(wsMapa As Worksheet, Gerador As String, CurrentCol As Long) As Boolean
 
     ' Enable error handling
     Dim ErrorSection As String
@@ -141,48 +141,31 @@ temp = Timer
 Debug.Print "UpdateMapa Start"
 
     Dim exportWb As Workbook
-    Dim wbIter As Workbook ' Iterator for workbooks
+    'Dim wbIter As Workbook ' Iterator for workbooks
     Dim Workbook As Workbook
-    Dim wsZTPP092 As Worksheet
-    Dim wsMapa As Worksheet
+    'Dim wsMapa As Worksheet
     Dim exportWs As Worksheet
-    Dim Row As Range
+    Dim Row As Long
     Dim exportWbName As String
     Dim exportWbPath As String
-    Dim StartDate As String
-    Dim EndDate As String
-    Dim ordem As String
-    Dim attempt As Long
+    'Dim StartDate As String
+    'Dim EndDate As String
+    'Dim ordem As String
+    'Dim attempt As Long
     Dim found As Boolean
     Dim wbCount As Long
     Dim wsMapaLR As Long
     Dim exportWsLR As Long
-    Dim currentRows As Long
-    Dim requiredRows As Long
-    Dim foundCell As Range
-    Dim Gerador As String
-
-    On Error Resume Next
-    Set wsMapa = wb.Sheets("Mapa de Suprimentos")
-    On Error GoTo ErrorHandler
-
-    If wsMapa Is Nothing Then
-        UpdateMapa = False
-        Exit Function
-    End If
-    
-    Gerador = wsMapa.Range("A2").Value
-
-    If Gerador = "" Then
-        UpdateMapa = False
-        Exit Function
-    End If
+    'Dim currentRows As Long
+    'Dim requiredRows As Long
+    'Dim foundCell As Range
+    'Dim Gerador As String
     
     ' Find wsMapa last row and save to wsMapaLR
-    If UCase(wsMapa.Cells(wsMapa.Cells(wsMapa.Rows.Count, "B").End(xlUp).Row, 2).Value) = UCase("SOBRA") Then
-        wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "B").End(xlUp).Row - 1
-    Else
-        wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "B").End(xlUp).Row
+    wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "A").End(xlUp).Row
+    
+    If wsMapaLR < 4 Then
+        wsMapaLR = 4
     End If
     
     ' Name of the workbook to find
@@ -259,10 +242,10 @@ ErrorSection = "ExportFormating"
     exportWsLR = exportWs.Cells(exportWs.Rows.Count, "C").End(xlUp).Row
     
     ' Delete dummy itens
-    For Each Row In exportWs.Range("A2:A" & exportWsLR)
-        If Row.Cells(1, 8).Value <> "" Then
-            'Row.Delete
-            Row.Cells(1, 5).Value = 0
+    For Row = 2 To exportWsLR
+        If exportWs.Cells(Row, 8).Value <> "" Then
+            exportWs.Cells(Row, 8).EntireRow.Delete
+            Row = Row - 1
         End If
     Next Row
     
@@ -282,9 +265,11 @@ ErrorSection = "PasteData"
     Dim lastGroupMapaStart As Long, lastGroupMapaEnd As Long
     Dim wsMapaGroupFound As Boolean
     
-    wsMapaCurrentRow = 5
+    ' Set current row as the first row
+    wsMapaCurrentRow = 4
     exportWsCurrentRow = 2
     
+    ' Set last group as the header row
     lastGroupMapaStart = wsMapaCurrentRow - 1
     lastGroupMapaEnd = wsMapaCurrentRow - 1
     
@@ -307,12 +292,12 @@ ErrorSection = "ExportLimits-" & exportWsCurrentRow
 ErrorSection = "MatchGroup-" & exportWsCurrentRow
             ' Look for a matching group in wsMapa
             wsMapaGroupFound = False
-            For wsMapaCurrentRow = lastGroupMapaEnd + 1 To wsMapaLR
-                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, "C").Value) = "0" Or wsMapa.Cells(wsMapaCurrentRow, "C").Value = 0) And Trim(wsMapa.Cells(wsMapaCurrentRow, "A").Value) = Trim(exportWs.Cells(groupExportStart, "C").Value) Then
+            For wsMapaCurrentRow = lastGroupMapaEnd To wsMapaLR
+                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) = "0" Or wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = 0) And wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
                     groupMapaStart = wsMapaCurrentRow
                     groupMapaEnd = groupMapaStart
                     ' Determine the end of this exportWs group:
-                    Do While groupMapaEnd + 1 <= wsMapaLR And Not (Trim(wsMapa.Cells(groupMapaEnd + 1, "C").Value) = "0" Or wsMapa.Cells(groupMapaEnd + 1, "C").Value = 0)
+                    Do While groupMapaEnd + 1 <= wsMapaLR And Not (Trim(wsMapa.Cells(groupMapaEnd + 1, CurrentCol).Value) = "0" Or wsMapa.Cells(groupMapaEnd + 1, CurrentCol).Value = 0)
                         groupMapaEnd = groupMapaEnd + 1
                     Loop
                     groupMapaCount = groupMapaEnd - groupMapaStart + 1
@@ -338,10 +323,10 @@ ErrorSection = "CreateGroupWhile-" & exportWsCurrentRow
                     Application.CutCopyMode = False
                     ' Replace compared columns with exportWs values
                     wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
-                    wsMapa.Cells(wsMapaCurrentRow + 1, "B").Value = exportWs.Cells(exportWsCurrentRow, "D").Value
-                    wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = exportWs.Cells(exportWsCurrentRow, "E").Value
-                    ' Fill the new row (green) for columns A to C
-                    wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow + 1, "A"), wsMapa.Cells(wsMapaCurrentRow + 1, "C")).Font.Strikethrough = False
+                    wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
+                    wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
+                    ' Remove strikethrough cells from wsMapa
+                    wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow, "A"), wsMapa.Cells(wsMapaCurrentRow, "C")).Font.Strikethrough = False
                     groupMapaEnd = wsMapaCurrentRow + 1 ' Adjust the last group row marker after inserting a row
                     wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                     wsMapaCurrentRow = wsMapaCurrentRow + 1
@@ -371,8 +356,8 @@ ErrorSection = "IfExportGroupSmaller-" & exportWsCurrentRow
                 Application.CutCopyMode = False
                 ' Replace compared columns with exportWs values
                 wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
-                wsMapa.Cells(wsMapaCurrentRow + 1, "B").Value = exportWs.Cells(exportWsCurrentRow, "D").Value
-                wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = exportWs.Cells(exportWsCurrentRow, "E").Value
+                wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
+                wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                 ' Fill the new row (green) for columns A to C
                 wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow, "A"), wsMapa.Cells(wsMapaCurrentRow, "C")).Font.Strikethrough = False
                 groupMapaEnd = wsMapaCurrentRow ' Adjust the last group row marker after inserting a row
@@ -402,7 +387,7 @@ ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                     If exportWsCurrentRow <= groupExportEnd Then
                         ' Compare wsMapa col A with exportWs col C and wsMapa col C with exportWs col E
                         If Trim(wsMapa.Cells(wsMapaCurrentRow, "A").Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "C").Value) Or _
-                           Trim(wsMapa.Cells(wsMapaCurrentRow, "C").Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "E").Value) Then
+                           Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "E").Value) Then
                             ' They are different: insert a row below copying the existing row and fill the new row green
                             wsMapa.Rows(wsMapaCurrentRow + 1).Insert Shift:=xlDown
                             ' Option 1: Copy the original row as base
@@ -411,8 +396,8 @@ ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                             Application.CutCopyMode = False
                             ' Replace compared columns with exportWs values
                             wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
-                            wsMapa.Cells(wsMapaCurrentRow + 1, "B").Value = exportWs.Cells(exportWsCurrentRow, "D").Value
-                            wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = exportWs.Cells(exportWsCurrentRow, "E").Value
+                            wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
+                            wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                             ' Fill the new row (green) for columns A to C
                             wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow + 1, "A"), wsMapa.Cells(wsMapaCurrentRow + 1, "C")).Font.Strikethrough = False
                             groupMapaEnd = groupMapaEnd + 1 ' Adjust the last group row marker after inserting a row
@@ -442,8 +427,8 @@ ErrorSection = "IfExportSheetBiggerWhile-" & exportWsCurrentRow
                         Application.CutCopyMode = False
                         ' Replace compared columns with exportWs values
                         wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
-                        wsMapa.Cells(wsMapaCurrentRow + 1, "B").Value = exportWs.Cells(exportWsCurrentRow, "D").Value
-                        wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = exportWs.Cells(exportWsCurrentRow, "E").Value
+                        wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
+                        wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                         ' Fill the new row (green) for columns A to C
                         wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow + 1, "A"), wsMapa.Cells(wsMapaCurrentRow + 1, "C")).Font.Strikethrough = False
                         groupMapaEnd = groupMapaEnd + 1 ' Adjust the last group row marker after inserting a row
@@ -497,7 +482,7 @@ ErrorHandler:
     Resume CleanExit
 End Function
 
-Function UpdateCJI3(PEP As String, CurrentCol As Long) As Boolean
+Function UpdateCJI3(wb As Workbook, PEP As String, CurrentCol As Long) As Boolean
 
     ' Enable error handling
     Dim ErrorSection As String
@@ -656,13 +641,6 @@ ErrorSection = "PasteData"
     exportWb.Close False  ' Close the exported workbook without saving
 
 Debug.Print "Project Review CJI3 Sheet update: " & Timer - temp
-temp = Timer
-
-ErrorSection = "UpdateComentarios"
-
-    UpdateComentarios wb, wsCJI3
-    
-Debug.Print "Project Review comments update: " & Timer - temp
 temp = Timer
     
     UpdateCJI3 = True
