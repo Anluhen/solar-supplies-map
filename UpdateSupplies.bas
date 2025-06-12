@@ -74,7 +74,7 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
                         Application.StatusBar = "Trabalhando em " & PEP
         
                         If Not UpdateMapa(ws, Gerador, CurrentCol) Or Not UpdateCJI3(wb, PEP, CurrentCol) Then
-                            MsgBox "Não foi possível atualizar Mapa de Suprimentos de " & vbCrLf & PEP, vbInformation
+                            MsgBox "Não foi possível atualizar Mapa de Suprimentos do PEP " & vbCrLf & PEP, vbInformation
                         End If
                         
                         CurrentCol = CurrentCol + 4
@@ -273,8 +273,11 @@ ErrorSection = "PasteData"
     lastGroupMapaStart = wsMapaCurrentRow - 1
     lastGroupMapaEnd = wsMapaCurrentRow - 1
     
-    ' Strikethrough cells from wsMapa
-    wsMapa.Range("A" & wsMapaCurrentRow & ":C" & wsMapaLR).Font.Strikethrough = True
+    ' Strikethrough quantities from wsMapa
+    wsMapa.Range( _
+      wsMapa.Cells(wsMapaCurrentRow, CurrentCol), _
+      wsMapa.Cells(wsMapaLR, CurrentCol) _
+    ).Font.Strikethrough = True
     
     Do While exportWsCurrentRow <= exportWsLR
 ErrorSection = "PasteDataWhile-" & exportWsCurrentRow
@@ -326,7 +329,7 @@ ErrorSection = "CreateGroupWhile-" & exportWsCurrentRow
                     wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                     wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                     ' Remove strikethrough cells from wsMapa
-                    wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow, "A"), wsMapa.Cells(wsMapaCurrentRow, "C")).Font.Strikethrough = False
+                    wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Font.Strikethrough = False
                     groupMapaEnd = wsMapaCurrentRow + 1 ' Adjust the last group row marker after inserting a row
                     wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                     wsMapaCurrentRow = wsMapaCurrentRow + 1
@@ -359,7 +362,7 @@ ErrorSection = "IfExportGroupSmaller-" & exportWsCurrentRow
                 wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                 wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                 ' Fill the new row (green) for columns A to C
-                wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow, "A"), wsMapa.Cells(wsMapaCurrentRow, "C")).Font.Strikethrough = False
+                wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Font.Strikethrough = False
                 groupMapaEnd = wsMapaCurrentRow ' Adjust the last group row marker after inserting a row
                 wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                 wsMapaCurrentRow = wsMapaCurrentRow + 1
@@ -399,13 +402,13 @@ ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                             wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                             wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                             ' Fill the new row (green) for columns A to C
-                            wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow + 1, "A"), wsMapa.Cells(wsMapaCurrentRow + 1, "C")).Font.Strikethrough = False
+                            wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Font.Strikethrough = False
                             groupMapaEnd = groupMapaEnd + 1 ' Adjust the last group row marker after inserting a row
                             wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                             wsMapaCurrentRow = wsMapaCurrentRow + 1 ' Skip the newly inserted row
                         Else
                             ' Remove strikethrough cells from wsMapa
-                            wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow, "A"), wsMapa.Cells(wsMapaCurrentRow, "C")).Font.Strikethrough = False
+                            wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Font.Strikethrough = False
                         End If
                     End If
                     
@@ -430,7 +433,7 @@ ErrorSection = "IfExportSheetBiggerWhile-" & exportWsCurrentRow
                         wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                         wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                         ' Fill the new row (green) for columns A to C
-                        wsMapa.Range(wsMapa.Cells(wsMapaCurrentRow + 1, "A"), wsMapa.Cells(wsMapaCurrentRow + 1, "C")).Font.Strikethrough = False
+                        wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Font.Strikethrough = False
                         groupMapaEnd = groupMapaEnd + 1 ' Adjust the last group row marker after inserting a row
                         wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                         wsMapaCurrentRow = wsMapaCurrentRow + 1 ' Skip the newly inserted row
