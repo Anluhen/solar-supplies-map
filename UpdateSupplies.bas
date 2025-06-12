@@ -73,7 +73,7 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
                         
                         Application.StatusBar = "Trabalhando em " & PEP
         
-                        If Not UpdateMapa(ws, Gerador, CurrentCol) Or Not UpdateCJI3(wb, PEP, CurrentCol) Then
+                        If Not UpdateMapa(ws, Gerador, CurrentCol) Or Not UpdateCJI3(wb, ws, PEP, CurrentCol) Then
                             MsgBox "Não foi possível atualizar Mapa de Suprimentos do PEP " & vbCrLf & PEP, vbInformation
                         End If
                         
@@ -499,7 +499,7 @@ ErrorHandler:
     Resume CleanExit
 End Function
 
-Function UpdateCJI3(wb As Workbook, PEP As String, CurrentCol As Long) As Boolean
+Function UpdateCJI3(wb As Workbook, wsMapa As Worksheet, PEP As String, CurrentCol As Long) As Boolean
 
     ' Enable error handling
     Dim ErrorSection As String
@@ -511,20 +511,20 @@ Dim temp As Double
 temp = Timer
 Debug.Print "UpdateCJI3 Start"
 
-    Dim exportWb As Workbook
-    Dim Workbook As Workbook
     Dim wsCJI3 As Worksheet
-    Dim exportWs As Worksheet
     Dim exportWbName As String
     Dim exportWbPath As String
     Dim EndDate As String
-    Dim attempt As Long
-    Dim found As Boolean
     Dim wbCount As Long
+    Dim found As Boolean
+    Dim Workbook As Workbook
+    Dim exportWb As Workbook
+    Dim exportWs As Worksheet
+    Dim RowIndex As Long
+    Dim wsMapaLR As Long
     
-    On Error Resume Next
-    Set wsCJI3 = wb.Sheets("CJI3")
-    On Error GoTo ErrorHandler
+    Set wsCJI3 = wb.Worksheets.Add(After:=wb.Sheets(wb.Sheets.Count))
+    wsCJI3.Name = "CJI3-" & PEP
     
     ' Check if the "CJI3" sheet exists
     If wsCJI3 Is Nothing Then
@@ -631,7 +631,7 @@ ErrorSection = "ExportWorkbook"
     If exportWb Is Nothing Then
         wsCJI3.UsedRange.ClearContents
         UpdateCJI3 = False
-        Exit Function
+        GoTo CleanExit
     End If
     
     Set exportWs = exportWb.Sheets(1)
@@ -641,9 +641,7 @@ temp = Timer
     
 ErrorSection = "PasteData"
 
-    ' Clear, copy and paste data from exportWs to wsCJI3
-    If wsCJI3.AutoFilterMode Then wsCJI3.AutoFilter.ShowAllData ' Clear any applied filters
-    wsCJI3.UsedRange.ClearContents
+    ' Copy and paste data from exportWs to wsCJI3
     exportWs.UsedRange.Copy
     wsCJI3.UsedRange.PasteSpecial
     
@@ -656,13 +654,39 @@ ErrorSection = "PasteData"
     ' Cleanup
     Application.CutCopyMode = False
     exportWb.Close False  ' Close the exported workbook without saving
-
+    
+    ' Find wsMapa last row and save to wsMapaLR
+    wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "A").End(xlUp).Row
+    
+    If wsMapaLR < 4 Then
+        wsMapaLR = 4
+    End If
+    
+    ' Wirte formulas
+    For RowIndex = 4 To wsMapaLR
+        ' Set formula
+        wsMapa.Cells(RowIndex, CurrentCol + 1).Formula = _
+          "=SUMIF('" & wsCJI3.Name & "'!H:H," & _
+                   wsMapa.Cells(RowIndex, 1).Address(False, False) & ",'" & _
+                   wsCJI3.Name & "'!J:J)"
+        ' Calculate formula
+        Application.Calculate
+        ' Copy formula and paste as value
+        wsMapa.Cells(RowIndex, CurrentCol + 1).Copy
+        wsMapa.Cells(RowIndex, CurrentCol + 1).PasteSpecial xlPasteValues
+        Application.CutCopyMode = False
+    Next RowIndex
+    
 Debug.Print "Project Review CJI3 Sheet update: " & Timer - temp
 temp = Timer
     
     UpdateCJI3 = True
     
 CleanExit:
+
+    Application.DisplayAlerts = False   ' avoid the “Are you sure?” prompt
+    wsCJI3.Delete
+    Application.DisplayAlerts = True
     
     Exit Function
 
