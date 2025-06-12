@@ -293,7 +293,7 @@ ErrorSection = "MatchGroup-" & exportWsCurrentRow
             ' Look for a matching group in wsMapa
             wsMapaGroupFound = False
             For wsMapaCurrentRow = lastGroupMapaEnd To wsMapaLR
-                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) = "0" Or wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = 0) And wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
+                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) = "0" Or wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = 0) And wsMapa.Cells(wsMapaCurrentRow, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
                     groupMapaStart = wsMapaCurrentRow
                     groupMapaEnd = groupMapaStart
                     ' Determine the end of this exportWs group:
