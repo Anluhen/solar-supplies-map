@@ -82,9 +82,6 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
                     Exit For
                 End If
             Next ws
-            
-            Stop
-            ' Adicionar código para verificar se alguma linha deve ser removida do código. If all quantities are striked, strike the entire line
         End If
     
         If Not IsMapa Then
@@ -93,11 +90,7 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
             MapaFound = True
         End If
         
-        ' UpdateCover wb, wsCJI3
-        
         Application.StatusBar = False
-
-        'ws.Activate
         
 NextWorkbook:
     Next wb
@@ -480,6 +473,14 @@ ErrorSection = "IfExportSheetBiggerWhile-" & exportWsCurrentRow
 
 ErrorSection = "Ending"
 
+    'Remove striketroguh and nullify qunatity
+    For Row = 4 To wsMapaLR
+        If wsMapa.Cells(Row, CurrentCol).Font.Strikethrough Then
+            wsMapa.Cells(Row, CurrentCol).Value = 0
+            wsMapa.Cells(Row, CurrentCol).Font.Strikethrough = False
+        End If
+    Next Row
+    
     UpdateMapa = True
 
     ' Close the exported workbook without saving changes
