@@ -82,6 +82,9 @@ Sub AtualizarMapa(Optional ShowOnMacroList As Boolean = False)
                     Exit For
                 End If
             Next ws
+            
+            Stop
+            ' Adicionar código para verificar se alguma linha deve ser removida do código. If all quantities are striked, strike the entire line
         End If
     
         If Not IsMapa Then
@@ -160,13 +163,6 @@ Debug.Print "UpdateMapa Start"
     'Dim requiredRows As Long
     'Dim foundCell As Range
     'Dim Gerador As String
-    
-    ' Find wsMapa last row and save to wsMapaLR
-    wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "A").End(xlUp).Row
-    
-    If wsMapaLR < 4 Then
-        wsMapaLR = 4
-    End If
     
     ' Name of the workbook to find
     exportWbName = "CS11-" & Gerador
@@ -265,6 +261,13 @@ ErrorSection = "PasteData"
     Dim lastGroupMapaStart As Long, lastGroupMapaEnd As Long
     Dim wsMapaGroupFound As Boolean
     
+    ' Find wsMapa last row and save to wsMapaLR
+    wsMapaLR = wsMapa.Cells(wsMapa.Rows.Count, "A").End(xlUp).Row
+    
+    If wsMapaLR < 4 Then
+        wsMapaLR = 4
+    End If
+    
     ' Set current row as the first row
     wsMapaCurrentRow = 4
     exportWsCurrentRow = 2
@@ -295,12 +298,13 @@ ErrorSection = "ExportLimits-" & exportWsCurrentRow
 ErrorSection = "MatchGroup-" & exportWsCurrentRow
             ' Look for a matching group in wsMapa
             wsMapaGroupFound = False
+            wsMapa.Cells(lastGroupMapaEnd + 1, 1).Value = ""
             For wsMapaCurrentRow = lastGroupMapaEnd To wsMapaLR
-                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) = "0" Or wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = 0) And wsMapa.Cells(wsMapaCurrentRow, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
+                If wsMapaCurrentRow <= wsMapaLR And (Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) = "" Or wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = 0) And wsMapa.Cells(wsMapaCurrentRow, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
                     groupMapaStart = wsMapaCurrentRow
                     groupMapaEnd = groupMapaStart
                     ' Determine the end of this exportWs group:
-                    Do While groupMapaEnd + 1 <= wsMapaLR And Not (Trim(wsMapa.Cells(groupMapaEnd + 1, CurrentCol).Value) = "0" Or wsMapa.Cells(groupMapaEnd + 1, CurrentCol).Value = 0)
+                    Do While groupMapaEnd + 1 <= wsMapaLR And Not (Trim(wsMapa.Cells(groupMapaEnd + 1, 1).Value) = "")
                         groupMapaEnd = groupMapaEnd + 1
                     Loop
                     groupMapaCount = groupMapaEnd - groupMapaStart + 1
@@ -325,7 +329,11 @@ ErrorSection = "CreateGroupWhile-" & exportWsCurrentRow
                     wsMapa.Rows(wsMapaCurrentRow + 1).PasteSpecial Paste:=xlPasteAll
                     Application.CutCopyMode = False
                     ' Replace compared columns with exportWs values
-                    wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                    If exportWs.Cells(exportWsCurrentRow, "E").Value = 0 Then
+                        wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = ""
+                    Else
+                        wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                    End If
                     wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                     wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                     ' Remove strikethrough cells from wsMapa
@@ -358,7 +366,11 @@ ErrorSection = "IfExportGroupSmaller-" & exportWsCurrentRow
                 wsMapa.Rows(wsMapaCurrentRow + 1).PasteSpecial Paste:=xlPasteAll
                 Application.CutCopyMode = False
                 ' Replace compared columns with exportWs values
-                wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                If exportWs.Cells(exportWsCurrentRow, "E").Value = 0 Then
+                    wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = ""
+                Else
+                    wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                End If
                 wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                 wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                 ' Fill the new row (green) for columns A to C
@@ -389,8 +401,9 @@ ErrorSection = "IfExportGroupBigger-" & exportWsCurrentRow
 ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                     If exportWsCurrentRow <= groupExportEnd Then
                         ' Compare wsMapa col A with exportWs col C and wsMapa col C with exportWs col E
-                        If Trim(wsMapa.Cells(wsMapaCurrentRow, "A").Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "C").Value) Or _
-                           Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "E").Value) Then
+                        If (Trim(wsMapa.Cells(wsMapaCurrentRow, "A").Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "C").Value) Or _
+                           Trim(wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value) <> Trim(exportWs.Cells(exportWsCurrentRow, "E").Value)) And _
+                           wsMapa.Cells(wsMapaCurrentRow, "C").Value <> Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, "")) Then
                             ' They are different: insert a row below copying the existing row and fill the new row green
                             wsMapa.Rows(wsMapaCurrentRow + 1).Insert Shift:=xlDown
                             ' Option 1: Copy the original row as base
@@ -398,7 +411,11 @@ ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                             wsMapa.Rows(wsMapaCurrentRow + 1).PasteSpecial Paste:=xlPasteAll
                             Application.CutCopyMode = False
                             ' Replace compared columns with exportWs values
-                            wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                            If exportWs.Cells(exportWsCurrentRow, "E").Value = 0 Then
+                                wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = ""
+                            Else
+                                wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                            End If
                             wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                             wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                             ' Fill the new row (green) for columns A to C
@@ -409,6 +426,8 @@ ErrorSection = "IfExportGroupBiggerWhile-" & exportWsCurrentRow
                         Else
                             ' Remove strikethrough cells from wsMapa
                             wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Font.Strikethrough = False
+                            ' Correct quantity
+                            wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                         End If
                     End If
                     
@@ -429,7 +448,11 @@ ErrorSection = "IfExportSheetBiggerWhile-" & exportWsCurrentRow
                         wsMapa.Rows(wsMapaCurrentRow + 1).PasteSpecial Paste:=xlPasteAll
                         Application.CutCopyMode = False
                         ' Replace compared columns with exportWs values
-                        wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                        If exportWs.Cells(exportWsCurrentRow, "E").Value = 0 Then
+                            wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = ""
+                        Else
+                            wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                        End If
                         wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
                         wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                         ' Fill the new row (green) for columns A to C
