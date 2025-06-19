@@ -301,29 +301,33 @@ ErrorSection = "MatchGroup-" & exportWsCurrentRow
             If Not wsMapaGroupFound Then
 ErrorSection = "CreateGroup-" & exportWsCurrentRow
                 ' Define the start
-                wsMapaCurrentRow = lastGroupMapaEnd
+                wsMapaCurrentRow = lastGroupMapaEnd + 1
                 exportWsCurrentRow = groupExportStart
                 groupMapaStart = lastGroupMapaEnd + 1
             
                 Do While exportWsCurrentRow <= groupExportEnd
 ErrorSection = "CreateGroupWhile-" & exportWsCurrentRow
                     ' They are different: insert a row below copying the existing row and fill the new row green
-                    wsMapa.Rows(wsMapaCurrentRow + 1).Insert Shift:=xlDown
+                    wsMapa.Rows(wsMapaCurrentRow).Insert Shift:=xlDown
                     ' Option 1: Copy the original row as base
-                    wsMapa.Rows(wsMapaCurrentRow).Copy
-                    wsMapa.Rows(wsMapaCurrentRow + 1).PasteSpecial Paste:=xlPasteAll
+                    If wsMapaCurrentRow - 1 > 3 Then
+                        wsMapa.Rows(wsMapaCurrentRow - 1).Copy
+                    Else
+                        wsMapa.Rows(wsMapaCurrentRow + 1).Copy
+                    End If
+                    wsMapa.Rows(wsMapaCurrentRow).PasteSpecial Paste:=xlPasteAll
                     Application.CutCopyMode = False
                     ' Replace compared columns with exportWs values
                     If exportWs.Cells(exportWsCurrentRow, "E").Value = 0 Then
-                        wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = ""
+                        wsMapa.Cells(wsMapaCurrentRow, "A").Value = ""
                     Else
-                        wsMapa.Cells(wsMapaCurrentRow + 1, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
+                        wsMapa.Cells(wsMapaCurrentRow, "A").Value = exportWs.Cells(exportWsCurrentRow, "C").Value
                     End If
-                    wsMapa.Cells(wsMapaCurrentRow + 1, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
-                    wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
+                    wsMapa.Cells(wsMapaCurrentRow, "C").Value = Trim(Replace(exportWs.Cells(exportWsCurrentRow, "D").Value, Gerador, ""))
+                    wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Value = exportWs.Cells(exportWsCurrentRow, "E").Value
                     ' Remove strikethrough cells from wsMapa
-                    wsMapa.Cells(wsMapaCurrentRow + 1, CurrentCol).Font.Strikethrough = False
-                    groupMapaEnd = wsMapaCurrentRow + 1 ' Adjust the last group row marker after inserting a row
+                    wsMapa.Cells(wsMapaCurrentRow, CurrentCol).Font.Strikethrough = False
+                    groupMapaEnd = wsMapaCurrentRow ' Adjust the last group row marker after inserting a row
                     wsMapaLR = wsMapaLR + 1  ' Adjust the last row marker after inserting a row
                     wsMapaCurrentRow = wsMapaCurrentRow + 1
                     exportWsCurrentRow = exportWsCurrentRow + 1
