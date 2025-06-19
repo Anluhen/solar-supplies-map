@@ -258,6 +258,8 @@ ErrorSection = "PasteData"
     ' Set last group as the header row
     lastGroupMapaStart = wsMapaCurrentRow - 1
     lastGroupMapaEnd = wsMapaCurrentRow - 1
+    groupMapaStart = lastGroupMapaStart
+    groupMapaEnd = lastGroupMapaEnd
     
     ' Strikethrough quantities from wsMapa
     wsMapa.Range( _
